@@ -1,4 +1,0 @@
-SELECT *
-FROM covid
-ORDER BY 3,4 DESC
-
