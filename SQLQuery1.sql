@@ -46,3 +46,84 @@ SELECT continent, MAX(CAST(total_deaths AS INT)) AS MAX_DEATHS
 FROM covid..covid
 GROUP BY continent
 ORDER BY MAX_DEATHS desc;
+
+-- Showing the continents with the highest death per population
+
+-- See globally the death percentage
+SELECT date, SUM(total_cases) as total_cases, SUM(CAST(total_deaths AS INT)) total_deaths, ROUND(SUM(CAST(total_deaths AS INT))/SUM(total_cases)*100,2) as death_percentage
+FROM covid..covid
+WHERE continent is not null
+GROUP BY date
+ORDER BY 1,2;
+
+-- Total population vs total vaccinations
+
+Select date, SUM(population) as population, SUM(CAST(people_fully_vaccinated AS FLOAT)) as people_fully_vaccinated,
+SUM(CAST(people_fully_vaccinated AS FLOAT))/SUM(population) as vaccination_percentage
+FROM covid..covid
+WHERE continent is not null
+GROUP BY date
+
+-- Rolling count of vaccinations
+SELECT location, continent, date, population, CAST(new_vaccinations AS bigint) as new_vaccinations, 
+SUM(CAST(new_vaccinations AS INT)) OVER(
+PARTITION BY location
+ORDER BY location, date) as rolling_vacc
+FROM covid..covid
+WHERE continent is not null;
+
+
+--using common table expression (CTE)
+
+WITH populationvsvacc (location, continent, date, population,new_vaccinations, rolling_vacc)
+AS
+(
+SELECT location, continent, date, population, CAST(new_vaccinations AS bigint) as new_vaccinations, 
+SUM(CAST(new_vaccinations AS INT)) OVER(
+PARTITION BY location
+ORDER BY location, date) as rolling_vacc
+FROM covid..covid
+WHERE continent is not null
+)
+
+SELECT *, ROUND(rolling_vacc/population*100,2)
+FROM populationvsvacc
+
+
+
+--Create temporary table
+
+DROP TABLE IF EXISTS #PercentPopulationvaccinated
+CREATE TABLE #PercentPopulationvaccinated
+(
+continent nvarchar(255),
+location nvarchar(255),
+date datetime, 
+population NUMERIC,
+new_vaccinations NUMERIC,
+rolling_vacc NUMERIC
+)
+
+
+INSERT into #PercentPopulationvaccinated
+SELECT location, continent, date, population, CAST(new_vaccinations AS bigint) as new_vaccinations, 
+SUM(CAST(new_vaccinations AS bigint)) OVER(
+PARTITION BY location
+ORDER BY location, date) as rolling_vacc
+FROM covid..covid
+WHERE continent is not null
+
+SELECT *, ROUND(rolling_vacc/population*100,2)
+FROM #PercentPopulationvaccinated
+
+
+-- Create view to store data
+
+CREATE VIEW population_vaccinated_view AS
+SELECT location, continent, date, population,
+CAST(new_vaccinations AS bigint) as new_vaccinations, 
+SUM(CAST(new_vaccinations AS bigint)) OVER(
+PARTITION BY location
+ORDER BY location, date) as rolling_vacc
+FROM covid..covid
+WHERE continent is not null
