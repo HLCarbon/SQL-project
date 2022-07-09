@@ -127,3 +127,21 @@ PARTITION BY location
 ORDER BY location, date) as rolling_vacc
 FROM covid..covid
 WHERE continent is not null
+
+-- Change date format to date instead of nvchar(255)
+
+ALTER TABLE covid..covid
+ALTER COLUMN date date
+
+
+-- Populate icu_patients NULL values to contain 0
+SELECT*
+FROM covid..covid
+
+UPDATE covid
+SET icu_patients = 0
+WHERE icu_patients is null
+
+
+SELECT*
+FROM covid..covid
