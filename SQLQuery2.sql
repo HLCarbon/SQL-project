@@ -1,7 +1,7 @@
 SELECT *
 FROM Housing..housing
 
--- Alter SaleDate datatype to date
+-- Alter SaleDate datatype to date instead of vchar(255)
 ALTER TABLE Housing..housing
 ALTER COLUMN SaleDate date
 
