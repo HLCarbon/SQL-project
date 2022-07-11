@@ -73,12 +73,43 @@ UPDATE Housing..housing
 SET OwnerSplitSate  = PARSENAME(REPLACE(OwnerAddress, ',', '.'),1);
 
 SELECT *
-FROM housing
+FROM Housing..housing
 
 -- Change Y and N to Yes and No
 
 SELECT DISTINCT(SoldAsVacant), Count(SoldAsVacant)
-FROM housing
+FROM Housing..housing
 GROUP BY SoldAsVacant 
 ORDER BY 2
 
+SELECT SoldAsVacant,
+CASE WHEN Soldasvacant = 'Y' THEN 'Yes'
+	WHEN Soldasvacant = 'N' THEN 'No'
+	ELSE Soldasvacant
+	END
+FROM Housing..housing
+
+UPDATE Housing..housing
+SET SoldAsVacant = CASE WHEN Soldasvacant = 'Y' THEN 'Yes'
+	WHEN Soldasvacant = 'N' THEN 'No'
+	ELSE Soldasvacant
+	END
+
+
+-- Remove Duplicates
+WITH Row_num_CTE as(
+SELECT *, 
+ROW_NUMBER() OVER(
+PARTITION BY ParcelID, PropertyAddress, SalePrice, SaleDate, LegalReference ORDER BY UniqueID) as row_number
+FROM Housing..housing)
+
+DELETE
+FROM Row_num_CTE
+WHERE row_number>1
+
+-- Delete Unused Columns
+
+ALTER TABLE Housing..housing
+DROP COLUMN OwnerAddress, PropertyAddress
+
+-- Done!
